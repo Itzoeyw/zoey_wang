@@ -5,6 +5,4 @@ chorus-1.txt
 
 verse-2.txt
 
-(Chorus)
-Twinkle, twinkle, little star,
-How I wonder what you are.
+chorus-2.txt
