@@ -5,4 +5,4 @@ chorus-1.txt
 
 verse-2.txt
 
-chorus-2.txt
+chorus-1.txt
