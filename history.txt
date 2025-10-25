@@ -1,0 +1,274 @@
+commit e6ff73ca95b7872d0655624950f2c81d932a0109
+Author: Itszoey <a1234@Zoeys-MacBook-Pro.local>
+Date:   Wed Oct 15 20:47:56 2025 +0100
+
+    Consolidate choruses to a single file
+
+commit 7c8af0dec961b73aac62a480885d044d8b83c038
+Author: Itszoey <a1234@Zoeys-MacBook-Pro.local>
+Date:   Wed Oct 15 20:40:23 2025 +0100
+
+    Revert "Remove line from chorus 1"
+    
+    This reverts commit 85d0360019a7037190459116103182581cd213e3.
+
+commit 85d0360019a7037190459116103182581cd213e3
+Author: Itszoey <a1234@Zoeys-MacBook-Pro.local>
+Date:   Wed Oct 15 20:38:46 2025 +0100
+
+    Remove line from chorus 1
+
+commit 4ca8591f0f5c2275bbe7c23bf1449aa4747db5ad
+Author: Itszoey <a1234@Zoeys-MacBook-Pro.local>
+Date:   Wed Oct 15 20:26:56 2025 +0100
+
+    Extract chorus 2
+
+commit d8003d29826b84fdfdd4b22773cb95275f6ecc2e
+Author: Itszoey <a1234@Zoeys-MacBook-Pro.local>
+Date:   Wed Oct 15 20:25:35 2025 +0100
+
+    Extract chorus 1
+
+commit e9e3cab017ec8d11426e566f5ca22a299ff261e7
+Author: Itszoey <a1234@Zoeys-MacBook-Pro.local>
+Date:   Wed Oct 15 20:24:07 2025 +0100
+
+    Extract chorus 2
+
+commit 3fa3ef706207da3925e1f24a0667ac551da8c60d
+Author: Itszoey <a1234@Zoeys-MacBook-Pro.local>
+Date:   Wed Oct 15 20:22:33 2025 +0100
+
+    Extract chorus 1
+
+commit a502d1b71fec8a029b8643e6aee998e475eac0cc
+Author: Itszoey <a1234@Zoeys-MacBook-Pro.local>
+Date:   Wed Oct 15 20:20:15 2025 +0100
+
+    Add song lyrics
+commit e6ff73ca95b7872d0655624950f2c81d932a0109
+Author: Itszoey <a1234@Zoeys-MacBook-Pro.local>
+Date:   Wed Oct 15 20:47:56 2025 +0100
+
+    Consolidate choruses to a single file
+
+diff --git a/song.txt b/song.txt
+index cbc496c..433bcb1 100644
+--- a/song.txt
++++ b/song.txt
+@@ -5,4 +5,4 @@ chorus-1.txt
+ 
+ verse-2.txt
+ 
+-chorus-2.txt
+\ No newline at end of file
++chorus-1.txt
+
+commit 4ca8591f0f5c2275bbe7c23bf1449aa4747db5ad
+Author: Itszoey <a1234@Zoeys-MacBook-Pro.local>
+Date:   Wed Oct 15 20:26:56 2025 +0100
+
+    Extract chorus 2
+
+diff --git a/song.txt b/song.txt
+index 864f47f..cbc496c 100644
+--- a/song.txt
++++ b/song.txt
+@@ -5,6 +5,4 @@ chorus-1.txt
+ 
+ verse-2.txt
+ 
+-(Chorus)
+-Twinkle, twinkle, little star,
+-How I wonder what you are.
++chorus-2.txt
+\ No newline at end of file
+
+commit d8003d29826b84fdfdd4b22773cb95275f6ecc2e
+Author: Itszoey <a1234@Zoeys-MacBook-Pro.local>
+Date:   Wed Oct 15 20:25:35 2025 +0100
+
+    Extract chorus 1
+
+diff --git a/song.txt b/song.txt
+index a814e4e..864f47f 100644
+--- a/song.txt
++++ b/song.txt
+@@ -1,9 +1,7 @@
+ 
+ verse-1.txt
+ 
+-(Chorus)
+-Twinkle, twinkle, little star,
+-How I wonder what you are.
++chorus-1.txt
+ 
+ verse-2.txt
+ 
+
+commit e9e3cab017ec8d11426e566f5ca22a299ff261e7
+Author: Itszoey <a1234@Zoeys-MacBook-Pro.local>
+Date:   Wed Oct 15 20:24:07 2025 +0100
+
+    Extract chorus 2
+
+diff --git a/song.txt b/song.txt
+index 28fa20e..a814e4e 100644
+--- a/song.txt
++++ b/song.txt
+@@ -5,11 +5,7 @@ verse-1.txt
+ Twinkle, twinkle, little star,
+ How I wonder what you are.
+ 
+-(Verse 2)
+-When the blazing sun is gone,
+-When he nothing shines upon,
+-Then you show your little light,
+-Twinkle, twinkle, all the night.
++verse-2.txt
+ 
+ (Chorus)
+ Twinkle, twinkle, little star,
+
+commit 3fa3ef706207da3925e1f24a0667ac551da8c60d
+Author: Itszoey <a1234@Zoeys-MacBook-Pro.local>
+Date:   Wed Oct 15 20:22:33 2025 +0100
+
+    Extract chorus 1
+
+diff --git a/song.txt b/song.txt
+index c5fc227..28fa20e 100644
+--- a/song.txt
++++ b/song.txt
+@@ -1,8 +1,5 @@
+-(Verse 1)
+-Twinkle, twinkle, little star,
+-How I wonder what you are.
+-Up above the world so high,
+-Like a diamond in the sky.
++
++verse-1.txt
+ 
+ (Chorus)
+ Twinkle, twinkle, little star,
+
+commit a502d1b71fec8a029b8643e6aee998e475eac0cc
+Author: Itszoey <a1234@Zoeys-MacBook-Pro.local>
+Date:   Wed Oct 15 20:20:15 2025 +0100
+
+    Add song lyrics
+
+diff --git a/song.txt b/song.txt
+new file mode 100644
+index 0000000..c5fc227
+--- /dev/null
++++ b/song.txt
+@@ -0,0 +1,19 @@
++(Verse 1)
++Twinkle, twinkle, little star,
++How I wonder what you are.
++Up above the world so high,
++Like a diamond in the sky.
++
++(Chorus)
++Twinkle, twinkle, little star,
++How I wonder what you are.
++
++(Verse 2)
++When the blazing sun is gone,
++When he nothing shines upon,
++Then you show your little light,
++Twinkle, twinkle, all the night.
++
++(Chorus)
++Twinkle, twinkle, little star,
++How I wonder what you are.
+commit 3fa3ef706207da3925e1f24a0667ac551da8c60d
+Author: Itszoey <a1234@Zoeys-MacBook-Pro.local>
+Date:   Wed Oct 15 20:22:33 2025 +0100
+
+    Extract chorus 1
+
+diff --git a/verse-1.txt b/verse-1.txt
+new file mode 100644
+index 0000000..b644ed7
+--- /dev/null
++++ b/verse-1.txt
+@@ -0,0 +1,5 @@
++(Verse 1)
++Twinkle, twinkle, little star,
++How I wonder what you are.
++Up above the world so high,
++Like a diamond in the sky.
+\ No newline at end of file
+commit e9e3cab017ec8d11426e566f5ca22a299ff261e7
+Author: Itszoey <a1234@Zoeys-MacBook-Pro.local>
+Date:   Wed Oct 15 20:24:07 2025 +0100
+
+    Extract chorus 2
+
+diff --git a/verse-2.txt b/verse-2.txt
+new file mode 100644
+index 0000000..06bcf59
+--- /dev/null
++++ b/verse-2.txt
+@@ -0,0 +1,5 @@
++(Verse 2)
++When the blazing sun is gone,
++When he nothing shines upon,
++Then you show your little light,
++Twinkle, twinkle, all the night.
+\ No newline at end of file
+commit 7c8af0dec961b73aac62a480885d044d8b83c038
+Author: Itszoey <a1234@Zoeys-MacBook-Pro.local>
+Date:   Wed Oct 15 20:40:23 2025 +0100
+
+    Revert "Remove line from chorus 1"
+    
+    This reverts commit 85d0360019a7037190459116103182581cd213e3.
+
+diff --git a/chorus-1.txt b/chorus-1.txt
+index efc1e67..ed5ab89 100644
+--- a/chorus-1.txt
++++ b/chorus-1.txt
+@@ -1,3 +1,3 @@
+ (Chorus)
+ Twinkle, twinkle, little star,
+-
++How I wonder what you are.
+\ No newline at end of file
+
+commit 85d0360019a7037190459116103182581cd213e3
+Author: Itszoey <a1234@Zoeys-MacBook-Pro.local>
+Date:   Wed Oct 15 20:38:46 2025 +0100
+
+    Remove line from chorus 1
+
+diff --git a/chorus-1.txt b/chorus-1.txt
+index ed5ab89..efc1e67 100644
+--- a/chorus-1.txt
++++ b/chorus-1.txt
+@@ -1,3 +1,3 @@
+ (Chorus)
+ Twinkle, twinkle, little star,
+-How I wonder what you are.
+\ No newline at end of file
++
+
+commit d8003d29826b84fdfdd4b22773cb95275f6ecc2e
+Author: Itszoey <a1234@Zoeys-MacBook-Pro.local>
+Date:   Wed Oct 15 20:25:35 2025 +0100
+
+    Extract chorus 1
+
+diff --git a/chorus-1.txt b/chorus-1.txt
+new file mode 100644
+index 0000000..ed5ab89
+--- /dev/null
++++ b/chorus-1.txt
+@@ -0,0 +1,3 @@
++(Chorus)
++Twinkle, twinkle, little star,
++How I wonder what you are.
+\ No newline at end of file
