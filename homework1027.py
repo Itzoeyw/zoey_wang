@@ -1,0 +1,15 @@
+name1 = input("Recipient's name: ")
+print(name1)
+birth_year = int(input("Year of birth:"))
+print(birth_year)
+message = input("Personalized message: ")
+print(message)
+name2 = input("Sender's name: ")
+print(name2)
+current_year = 2025
+age = current_year - birth_year
+print(f"\n{name1}, let's celebrate your {age} years of awesomeness! ")
+print(f"\nWishing you a day filled with joy and laughter as you turn {age} ! ")
+print(f"\n{message}")
+print("\nWith love and best wishes,")
+print(name2)
