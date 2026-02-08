@@ -1,0 +1,316 @@
+import os
+import json
+from flask import Flask, render_template, request, redirect, url_for, flash
+
+# ─────────────────────────── Config ──────────────────────────────────
+
+app = Flask(__name__)
+app.secret_key = "change-this-to-a-real-secret"
+
+DATA_DIR  = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data")
+DATA_FILE = os.path.join(DATA_DIR, "history.json")
+
+
+# ─────────────────────────── Data layer ──────────────────────────────
+
+def _ensure_data_dir():
+    """Create the data directory if it doesn't exist."""
+    os.makedirs(DATA_DIR, exist_ok=True)
+
+
+def load_data():
+    """
+    Read the persistent JSON file and return the full state dict.
+    Structure:
+    {
+        "balance": float,
+        "products": { "name": {"price": float, "quantity": int}, ... },
+        "history":  [ {type, product, quantity, price, total}, ... ]
+    }
+    """
+    _ensure_data_dir()
+    if not os.path.exists(DATA_FILE):
+        return {"balance": 0.0, "products": {}, "history": []}
+
+    try:
+        with open(DATA_FILE, "r") as f:
+            data = json.load(f)
+        # Guarantee keys exist (defensive)
+        data.setdefault("balance", 0.0)
+        data.setdefault("products", {})
+        data.setdefault("history", [])
+        return data
+    except (json.JSONDecodeError, IOError) as e:
+        print(f"[WARNING] Could not read {DATA_FILE}: {e}")
+        return {"balance": 0.0, "products": {}, "history": []}
+
+
+def save_data(data):
+    """Persist the full state dict to the JSON file."""
+    _ensure_data_dir()
+    try:
+        with open(DATA_FILE, "w") as f:
+            json.dump(data, f, indent=2)
+    except IOError as e:
+        print(f"[ERROR] Could not write {DATA_FILE}: {e}")
+
+
+# ─────────────────────────── Helpers ─────────────────────────────────
+
+def _validate_positive_float(value, field_name):
+    """Return (float_value, error_string | None)."""
+    try:
+        v = float(value)
+    except (TypeError, ValueError):
+        return None, f"{field_name} must be a number."
+    if v <= 0:
+        return None, f"{field_name} must be greater than zero."
+    return v, None
+
+
+def _validate_positive_int(value, field_name):
+    """Return (int_value, error_string | None)."""
+    try:
+        v = int(value)
+    except (TypeError, ValueError):
+        return None, f"{field_name} must be a whole number."
+    if v <= 0:
+        return None, f"{field_name} must be greater than zero."
+    return v, None
+
+
+# ─────────────────────────── Routes ──────────────────────────────────
+
+# ── Dashboard ────────────────────────────────────────────────────────
+
+@app.route("/")
+def index():
+    data = load_data()
+    return render_template(
+        "index.html",
+        balance=f"{data['balance']:.2f}",
+        products=data["products"],
+    )
+
+
+# ── Purchase ─────────────────────────────────────────────────────────
+
+@app.route("/purchase", methods=["GET", "POST"])
+def purchase():
+    if request.method == "GET":
+        return render_template("purchase.html")
+
+    # --- Validate input ---------------------------------------------------
+    product_name = request.form.get("product_name", "").strip()
+    if not product_name:
+        flash("Product name is required.", "error")
+        return render_template("purchase.html", error="Product name is required.")
+
+    unit_price, err = _validate_positive_float(
+        request.form.get("unit_price"), "Unit price"
+    )
+    if err:
+        flash(err, "error")
+        return render_template("purchase.html", error=err)
+
+    quantity, err = _validate_positive_int(
+        request.form.get("quantity"), "Quantity"
+    )
+    if err:
+        flash(err, "error")
+        return render_template("purchase.html", error=err)
+
+    # --- Update state -----------------------------------------------------
+    total_cost = round(unit_price * quantity, 2)
+    data = load_data()
+
+    # Check if enough balance
+    if data["balance"] < total_cost:
+        msg = (f"Insufficient balance. Need {total_cost:.2f}, "
+               f"but only {data['balance']:.2f} available.")
+        flash(msg, "error")
+        return render_template("purchase.html", error=msg)
+
+    # Deduct balance
+    data["balance"] = round(data["balance"] - total_cost, 2)
+
+    # Add to warehouse
+    if product_name in data["products"]:
+        data["products"][product_name]["quantity"] += quantity
+        data["products"][product_name]["price"] = unit_price
+    else:
+        data["products"][product_name] = {
+            "price": unit_price,
+            "quantity": quantity,
+        }
+
+    # Record history
+    data["history"].append({
+        "type":     "purchase",
+        "product":  product_name,
+        "quantity": quantity,
+        "price":    unit_price,
+        "total":    total_cost,
+    })
+
+    save_data(data)
+    flash(f"Purchased {quantity} × {product_name} for {total_cost:.2f} USD.",
+          "success")
+    return redirect(url_for("index"))
+
+
+# ── Sale ─────────────────────────────────────────────────────────────
+
+@app.route("/sale", methods=["GET", "POST"])
+def sale():
+    if request.method == "GET":
+        return render_template("sale.html")
+
+    # --- Validate input ---------------------------------------------------
+    product_name = request.form.get("product_name", "").strip()
+    if not product_name:
+        flash("Product name is required.", "error")
+        return render_template("sale.html", error="Product name is required.")
+
+    unit_price, err = _validate_positive_float(
+        request.form.get("unit_price"), "Unit price"
+    )
+    if err:
+        flash(err, "error")
+        return render_template("sale.html", error=err)
+
+    quantity, err = _validate_positive_int(
+        request.form.get("quantity"), "Quantity"
+    )
+    if err:
+        flash(err, "error")
+        return render_template("sale.html", error=err)
+
+    # --- Update state -----------------------------------------------------
+    data = load_data()
+
+    if product_name not in data["products"]:
+        msg = f"Product '{product_name}' not found in warehouse."
+        flash(msg, "error")
+        return render_template("sale.html", error=msg)
+
+    if data["products"][product_name]["quantity"] < quantity:
+        avail = data["products"][product_name]["quantity"]
+        msg = (f"Not enough stock. Requested {quantity}, "
+               f"but only {avail} available.")
+        flash(msg, "error")
+        return render_template("sale.html", error=msg)
+
+    total_revenue = round(unit_price * quantity, 2)
+
+    # Deduct stock
+    data["products"][product_name]["quantity"] -= quantity
+    if data["products"][product_name]["quantity"] == 0:
+        del data["products"][product_name]
+
+    # Add revenue to balance
+    data["balance"] = round(data["balance"] + total_revenue, 2)
+
+    # Record history
+    data["history"].append({
+        "type":     "sale",
+        "product":  product_name,
+        "quantity": quantity,
+        "price":    unit_price,
+        "total":    total_revenue,
+    })
+
+    save_data(data)
+    flash(f"Sold {quantity} × {product_name} for {total_revenue:.2f} USD.",
+          "success")
+    return redirect(url_for("index"))
+
+
+# ── Balance change ───────────────────────────────────────────────────
+
+@app.route("/balance", methods=["GET", "POST"])
+def balance():
+    if request.method == "GET":
+        return render_template("balance.html")
+
+    # --- Validate input ---------------------------------------------------
+    operation = request.form.get("operation", "").strip()
+    if operation not in ("add", "subtract"):
+        msg = "Invalid operation. Choose 'add' or 'subtract'."
+        flash(msg, "error")
+        return render_template("balance.html", error=msg)
+
+    amount, err = _validate_positive_float(
+        request.form.get("amount"), "Amount"
+    )
+    if err:
+        flash(err, "error")
+        return render_template("balance.html", error=err)
+
+    # --- Update state -----------------------------------------------------
+    data = load_data()
+
+    if operation == "add":
+        data["balance"] = round(data["balance"] + amount, 2)
+        total = amount
+    else:  # subtract
+        if data["balance"] < amount:
+            msg = (f"Cannot subtract {amount:.2f}. "
+                   f"Current balance is {data['balance']:.2f}.")
+            flash(msg, "error")
+            return render_template("balance.html", error=msg)
+        data["balance"] = round(data["balance"] - amount, 2)
+        total = -amount
+
+    # Record history
+    data["history"].append({
+        "type":      "balance",
+        "product":   "—",
+        "quantity":  "—",
+        "price":     "—",
+        "total":     total,
+        "operation": operation,
+    })
+
+    save_data(data)
+    flash(f"Balance {'increased' if operation == 'add' else 'decreased'} "
+          f"by {amount:.2f} USD.  New balance: {data['balance']:.2f} USD.",
+          "success")
+    return redirect(url_for("index"))
+
+
+# ── History ──────────────────────────────────────────────────────────
+
+@app.route("/history/")
+@app.route("/history/<int:line_from>/<int:line_to>/")
+def history(line_from=None, line_to=None):
+    data = load_data()
+    all_history = data["history"]
+
+    if line_from is not None and line_to is not None:
+        # Clamp values to valid range
+        line_from = max(0, line_from)
+        line_to   = min(line_to, len(all_history))
+        if line_from > line_to:
+            flash("'from' cannot be greater than 'to'.", "error")
+            display_history = all_history
+            line_from = 0
+        else:
+            display_history = all_history[line_from:line_to]
+    else:
+        display_history = all_history
+        line_from = 0
+
+    return render_template(
+        "history.html",
+        history=display_history,
+        line_from=line_from,
+        line_to=line_to if line_to is not None else len(all_history),
+        total_records=len(all_history),
+    )
+
+
+# ─────────────────────────── Entry point ─────────────────────────────
+
+if __name__ == "__main__":
+    app.run(debug=True, port=5000)
