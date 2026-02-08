@@ -1,0 +1,159 @@
+#!/usr/bin/env python3
+"""Accounting system with a Manager class that uses decorators for actions."""
+
+
+# ──────────────────── Action Registry & Decorator ────────────────────
+
+_action_registry = {}
+
+
+def action(name):
+    """Decorator that registers a method as a named action."""
+    def decorator(func):
+        _action_registry[name] = func
+        return func
+    return decorator
+
+
+# ──────────────────── Account (base class) ───────────────────────────
+
+class Account:
+    """Stores core accounting data: products, transactions, totals."""
+
+    def __init__(self):
+        self.products = {}      # name -> {"price": float, "quantity": int}
+        self.history  = []      # list of transaction dicts
+        self.income   = 0.0
+        self.expenses = 0.0
+
+
+# ──────────────────── Manager (inherits Account) ─────────────────────
+
+class Manager(Account):
+    """Manages accounting operations dispatched through assign()."""
+
+    def __init__(self):
+        super().__init__()
+
+    # ── dispatcher ──────────────────────────────────────────────────
+
+    def assign(self, task, *args, **kwargs):
+        """Look up *task* in the registry and call the matching method."""
+        if task in _action_registry:
+            return _action_registry[task](self, *args, **kwargs)
+        else:
+            print(f"Error: Unknown task '{task}'")
+            print(f"Available tasks: {', '.join(_action_registry.keys())}")
+
+    # ── registered actions ──────────────────────────────────────────
+
+    @action("purchase")
+    def purchase(self, product, quantity, price):
+        """Buy *quantity* units of *product* at *price* each."""
+        quantity = int(quantity)
+        price    = float(price)
+        cost     = quantity * price
+
+        if product in self.products:
+            self.products[product]["quantity"] += quantity
+            self.products[product]["price"]     = price      # update price
+        else:
+            self.products[product] = {"price": price, "quantity": quantity}
+
+        self.expenses += cost
+        self.history.append({
+            "type": "purchase", "product": product,
+            "quantity": quantity, "price": price, "total": cost,
+        })
+        print(f"  ✔ Purchased {quantity} × {product} @ {price:.2f} "
+              f"(total cost: {cost:.2f})")
+
+    @action("sale")
+    def sale(self, product, quantity, price):
+        """Sell *quantity* units of *product* at *price* each."""
+        quantity = int(quantity)
+        price    = float(price)
+
+        if product not in self.products or \
+           self.products[product]["quantity"] < quantity:
+            print(f"  ✘ Error: Not enough '{product}' in stock.")
+            return
+
+        revenue = quantity * price
+        self.products[product]["quantity"] -= quantity
+        if self.products[product]["quantity"] == 0:
+            del self.products[product]
+
+        self.income += revenue
+        self.history.append({
+            "type": "sale", "product": product,
+            "quantity": quantity, "price": price, "total": revenue,
+        })
+        print(f"  ✔ Sold {quantity} × {product} @ {price:.2f} "
+              f"(revenue: {revenue:.2f})")
+
+    @action("balance")
+    def balance(self):
+        """Display current financial balance."""
+        bal = self.income - self.expenses
+        print(f"\n{'=' * 40}")
+        print(f"  Income:   {self.income:>10.2f}")
+        print(f"  Expenses: {self.expenses:>10.2f}")
+        print(f"  Balance:  {bal:>10.2f}")
+        print(f"{'=' * 40}\n")
+        return bal
+
+    @action("list")
+    def list_products(self):
+        """List all products currently in inventory."""
+        if not self.products:
+            print("  Inventory is empty.")
+            return
+        print(f"\n  {'Product':<20} {'Price':>10} {'Qty':>6}")
+        print("  " + "-" * 38)
+        for name, info in self.products.items():
+            print(f"  {name:<20} {info['price']:>10.2f} "
+                  f"{info['quantity']:>6}")
+        print()
+
+    @action("history")
+    def show_history(self):
+        """Display the full transaction history."""
+        if not self.history:
+            print("  No transactions recorded.")
+            return
+        print(f"\n  {'#':<4} {'Type':<10} {'Product':<15} "
+              f"{'Qty':>5} {'Price':>8} {'Total':>10}")
+        print("  " + "-" * 56)
+        for i, tx in enumerate(self.history, 1):
+            print(f"  {i:<4} {tx['type']:<10} {tx['product']:<15} "
+                  f"{tx['quantity']:>5} {tx['price']:>8.2f} "
+                  f"{tx['total']:>10.2f}")
+        print()
+
+
+# ──────────────────── Demo / Test ────────────────────────────────────
+
+if __name__ == "__main__":
+    mgr = Manager()
+
+    print("── Purchases ─────────────────────────────")
+    mgr.assign("purchase", "Laptop",   10, 999.99)
+    mgr.assign("purchase", "Mouse",    50,  19.99)
+    mgr.assign("purchase", "Keyboard", 30,  49.99)
+
+    print("\n── Sales ─────────────────────────────────")
+    mgr.assign("sale", "Laptop",  3, 1299.99)
+    mgr.assign("sale", "Mouse",  10,   29.99)
+
+    print("\n── Inventory ─────────────────────────────")
+    mgr.assign("list")
+
+    print("── Balance ───────────────────────────────")
+    mgr.assign("balance")
+
+    print("── History ───────────────────────────────")
+    mgr.assign("history")
+
+    print("── Unknown task ──────────────────────────")
+    mgr.assign("refund", "Laptop", 1, 1299.99)
