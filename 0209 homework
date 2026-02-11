@@ -1,0 +1,127 @@
+import os
+from flask import Flask, render_template, request, redirect, url_for, flash
+from flask_sqlalchemy import SQLAlchemy
+from sqlalchemy.exc import SQLAlchemyError
+from datetime import datetime
+
+app = Flask(__name__)
+app.secret_key = "secret_accounting_key"
+
+# 1. Setup SQLite Database
+# The database file 'accounting.db' will be created in the instance folder
+basedir = os.path.abspath(os.path.dirname(__file__))
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(basedir, 'accounting.db')
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+
+db = SQLAlchemy(app)
+
+# --- Models ---
+
+class Product(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100), unique=True, nullable=False)
+    quantity = db.Column(db.Integer, default=0)
+    unit_price = db.Column(db.Float, nullable=False)
+
+class Balance(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    amount = db.Column(db.Float, default=0.0)
+
+class Transaction(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    type = db.Column(db.String(50), nullable=False)  # e.g., 'Purchase', 'Sale', 'Balance Change'
+    details = db.Column(db.String(255))
+    timestamp = db.Column(db.DateTime, default=datetime.utcnow)
+
+# Initialize Database (Create tables if they don't exist)
+with app.app_context():
+    db.create_all()
+    # Initialize balance if table is empty
+    if not Balance.query.first():
+        db.session.add(Balance(amount=1000.0)) # Starting balance
+        db.session.commit()
+
+# --- Helpers ---
+
+def get_balance():
+    return Balance.query.first()
+
+def log_transaction(t_type, details):
+    new_txn = Transaction(type=t_type, details=details)
+    db.session.add(new_txn)
+
+# --- Routes ---
+
+@app.route('/')
+def index():
+    products = Product.query.all()
+    balance = get_balance().amount
+    transactions = Transaction.query.order_by(Transaction.timestamp.desc()).limit(10).all()
+    return render_template('index.html', products=products, balance=balance, transactions=transactions)
+
+@app.route('/buy', methods=['POST'])
+def buy():
+    name = request.form.get('name')
+    qty = int(request.form.get('quantity'))
+    price = float(request.form.get('price'))
+    total_cost = qty * price
+
+    balance_record = get_balance()
+
+    if balance_record.amount < total_cost:
+        flash("Error: Insufficient funds!", "danger")
+        return redirect(url_for('index'))
+
+    try:
+        # Update Balance
+        balance_record.amount -= total_cost
+
+        # Update or Create Product
+        product = Product.query.filter_by(name=name).first()
+        if product:
+            product.quantity += qty
+            product.unit_price = price # Update to latest purchase price
+        else:
+            new_product = Product(name=name, quantity=qty, unit_price=price)
+            db.session.add(new_product)
+
+        log_transaction('Purchase', f"Bought {qty}x {name} for {total_cost}")
+        db.session.commit()
+        flash(f"Successfully bought {qty} {name}(s)", "success")
+    except SQLAlchemyError as e:
+        db.session.rollback() # 3. Handle database errors gracefully
+        flash(f"Database error: {str(e)}", "danger")
+
+    return redirect(url_for('index'))
+
+@app.route('/sell', methods=['POST'])
+def sell():
+    name = request.form.get('name')
+    qty = int(request.form.get('quantity'))
+    
+    product = Product.query.filter_by(name=name).first()
+
+    if not product or product.quantity < qty:
+        flash("Error: Not enough stock!", "danger")
+        return redirect(url_for('index'))
+
+    try:
+        # Update Balance (sell at 1.5x purchase price for demo)
+        revenue = qty * (product.unit_price * 1.5)
+        balance_record = get_balance()
+        balance_record.amount += revenue
+
+        # Update Stock
+        product.quantity -= qty
+        
+        log_transaction('Sale', f"Sold {qty}x {name} for {revenue}")
+        db.session.commit()
+        flash(f"Successfully sold {qty} {name}(s)", "success")
+    except SQLAlchemyError:
+        db.session.rollback()
+        flash("An error occurred during the sale transaction.", "danger")
+
+    return redirect(url_for('index'))
+
+if __name__ == '__main__':
+    app.run(debug=True)
